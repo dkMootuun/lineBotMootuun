@@ -54,7 +54,7 @@ def handle_message(event):
         line_bot_api.reply_message(
             event.reply_token,
             # TextSendMessage(text=event.message.text+'จ๋าาา'))
-            TextSendMessage(text='เราไม่เข้าใจนายอะ ลองใส่เป็น ราคาน้ำมัน หรือ oilPrice'))
+            TextSendMessage(text='เราไม่เข้าใจนายอะ ลองใส่เป็น ราคาน้ำมัน หรือ oilPrice นะค่ะ'))
 
 
 if __name__ == "__main__":
