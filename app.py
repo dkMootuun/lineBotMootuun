@@ -10,7 +10,9 @@ from linebot.exceptions import (
     InvalidSignatureError
 )
 from linebot.models import (
-    MessageEvent, TextMessage, TextSendMessage,ImageMessage,VideoMessage,AudioMessage
+   MessageEvent, TextMessage, TextSendMessage,
+   ImageMessage, VideoMessage, AudioMessage,
+   StickerMessage
 )
 
 from features.CarAnalytics import LicencePlate
@@ -22,9 +24,22 @@ static_tmp_path = os.path.join(os.path.dirname(__file__), 'static', 'tmp')
 app = Flask(__name__)
 
 latest_image_path = ''
+
+channel_secret = os.getenv('LINE_CHANNEL_SECRET', None)
+channel_access_token = os.getenv('LINE_CHANNEL_ACCESS_TOKEN', None)
+
+if channel_secret is None:
+   print('Specify LINE_CHANNEL_SECRET as environment variable.')
+   sys.exit(1)
+if channel_access_token is None:
+   print('Specify LINE_CHANNEL_ACCESS_TOKEN as environment variable.')
+   sys.exit(1)
+
+line_bot_api = LineBotApi(channel_access_token)
+handler = WebhookHandler(channel_secret)
 # app = app.py
-line_bot_api = LineBotApi('BQOyunikRw/9QAmpvamgIxg62I23/9AXs1skmMDGx2M2gRpvdvAMwBF2y0PhczRnRQkQ9HQaobs0Faq+5wu2F0UdhL9/xN1owhJn4n3jhvLtYnosrXPEKuL3k/5mHelUKMNLFPp1bMYv0nX4WdGg9wdB04t89/1O/w1cDnyilFU=')
-handler = WebhookHandler('9669a64ef354ce21d40b2dd7d774583f')
+#line_bot_api = LineBotApi('tGrHUoFxl0n9SUpbKuOZBeJwNNya1AiUaYJ+I5rP/+JKQoMDdbzOWM0PN8eMJBNB16WbbR7XhicF/r2kDycOMZYX2ZYOXvczKjDqXGgp7IDNkoPyCFIeMuxiYDq2ErUtApA13UmQG+YAiU9RzksJEgdB04t89/1O/w1cDnyilFU=')
+#handler = WebhookHandler('dc13dab5ccf46f841311a296443207d0')
 # copy from linebot
 
 @app.route("/",methods=['GET'])
@@ -48,10 +63,20 @@ def callback():
 
     return 'OK'
 
+@handler.add(MessageEvent, message=StickerMessage)
+def handle_sticker_message(event):
+    # Handle webhook verification
+    if event.reply_token == 'ffffffffffffffffffffffffffffffff':
+       return 'OK'
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     global latest_image_path
+    
+    # Handle webhook verification
+    if event.reply_token == '00000000000000000000000000000000':
+       return 'OK'
+
     if (event.message.text == 'ราคาน้ำมัน') or (event.message.text == 'oilPrice') :
         l = priceOil.get_price()
         s = ""
