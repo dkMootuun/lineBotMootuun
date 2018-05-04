@@ -7,12 +7,14 @@ from linebot import (
     LineBotApi, WebhookHandler
 )
 from linebot.exceptions import (
-    InvalidSignatureError
+    InvalidSignatureError,LineBotApiError
 )
 from linebot.models import (
    MessageEvent, TextMessage, TextSendMessage,
    ImageMessage, VideoMessage, AudioMessage,
-   StickerMessage
+   StickerMessage,JoinEvent,StickerSendMessage,
+   SourceGroup
+
 )
 
 from features.CarAnalytics import LicencePlate
@@ -75,9 +77,38 @@ def handle_message(event):
     
     # Handle webhook verification
     if event.reply_token == '00000000000000000000000000000000':
-       return 'OK'
+        return 'OK'
+    if event.message.text == 'ออกไปได้แล้ว':
+        if isinstance(event.source,SourceGroup) and event.source.user_id == 'U792ff52513700854a4a20721b90e79fb':
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextMessage(text='บะบายค่า')
+            )   
+            line_bot_api.leave_group(event.source.group_id)
+        else:
+               line_bot_api.reply_message(
+                   event.reply_token,
+                   TextMessage(text='ไม่ออกอะจ้าาา!')
+               )
+    elif event.message.text == 'profile':
+        user_id = event.source.user_id
+        profile = line_bot_api.get_profile(user_id)
+        # image_message = ImageSendMessage(
+        #             original_content_url=profile.picture_url,
+        #             preview_image_url=profile.picture_url
+        #         )
 
-    if (event.message.text == 'ราคาน้ำมัน') or (event.message.text == 'oilPrice') :
+        line_bot_api.reply_message(
+            event.reply_token,
+            [
+                TextSendMessage(text=profile.display_name),
+                TextSendMessage(text=profile.user_id),
+                TextSendMessage(text=profile.picture_url),
+                TextSendMessage(text=profile.status_message),
+                # image_message
+            ]
+        )
+    elif (event.message.text == 'ราคาน้ำมัน') or (event.message.text == 'oilPrice') :
         l = priceOil.get_price()
         s = ""
         for p in l:
@@ -110,10 +141,15 @@ def handle_message(event):
                 ])
 
     else:
-        line_bot_api.push_message(
-            event.reply_token,
+        #line_bot_api.push_message(
+            #event.reply_token,
             # TextSendMessage(text=event.message.text+'จ๋าาา'))
-            TextSendMessage(text='เราไม่เข้าใจนายอะ ลองใส่เป็น ราคาน้ำมัน หรือ oilPrice นะค่ะ'))
+            #TextSendMessage(text='เราไม่เข้าใจนายอะ ลองใส่เป็น ราคาน้ำมัน หรือ oilPrice นะค่ะ')
+        #)
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextMessage(text='ไม่เข้าใจอะ')
+        ) 
 
 
 
@@ -151,7 +187,40 @@ def handle_content_message(event):
                 TextSendMessage(text= 'เก็บรูปให้แล้วค่ะ')
             ])
 
+@handler.add(JoinEvent)
+def handle_join(event):
+    # group_id = event.source.group_id
+    # line_bot_api.get_group_member_profile(group_id,member_id)
+    # member_ids_res = line_bot_api.get_group_member_ids(group_id)
+    # print(member_ids_res.member_ids)
+    # print(member_ids_res.next)
 
+    try:
+        profile = line_bot_api.get_group_member_profile(
+            event.source.group_id,
+            'U792ff52513700854a4a20721b90e79fb'
+        )
+        line_bot_api.reply_message(
+            event.reply_token,
+            [
+                TextSendMessage(text='สวัสดีค่า'),
+                StickerSendMessage(
+                    package_id=1,
+                    sticker_id=2
+                )
+            ]
+        )        
+    except LineBotApiError as e:
+        print(e.status_code)
+        print(e.error.message)
+        print(e.error.details)
+        line_bot_api.reply_message(
+            event.reply_token,
+            [
+                TextSendMessage(text='หัวหน้าไม่อยู่ในห้องนี้\nไปละค่ะ\nบัย'),
+            ]
+        )
+        line_bot_api.leave_group(event.source.group_id)
 
 if __name__ == "__main__":
     app.run()
